@@ -27,7 +27,6 @@ namespace FreeCamera
         volatile LONG g_MouseDY = 0;
         HWND g_GameWindow = nullptr;
         WNDPROC g_OldWndProc = nullptr;
-        HHOOK g_KbHook = nullptr;
 
         bool IsFlightKey(DWORD key)
         {
@@ -36,16 +35,6 @@ namespace FreeCamera
                 !g_Locked.load(std::memory_order_relaxed) &&
                 key != static_cast<DWORD>(config.free_cam_key) &&
                 key != static_cast<DWORD>(config.free_cam_lock_key);
-        }
-
-        LRESULT CALLBACK KbProc(int nCode, WPARAM wParam, LPARAM lParam)
-        {
-            if (nCode >= 0 && lParam)
-            {
-                auto* keyboard = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
-                if (IsFlightKey(keyboard->vkCode)) return 1;
-            }
-            return CallNextHookEx(g_KbHook, nCode, wParam, lParam);
         }
 
         LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -283,8 +272,6 @@ namespace FreeCamera
             return;
         }
 
-        g_KbHook = SetWindowsHookExA(
-            WH_KEYBOARD_LL, KbProc, GetModuleHandleA(nullptr), 0);
         g_Ready.store(true, std::memory_order_relaxed);
         std::cout << "   -> FreeCamera ready." << std::endl;
 
